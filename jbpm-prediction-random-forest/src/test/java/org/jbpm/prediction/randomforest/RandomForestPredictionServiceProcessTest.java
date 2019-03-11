@@ -16,10 +16,6 @@
 
 package org.jbpm.prediction.randomforest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,6 +34,8 @@ import org.kie.api.runtime.process.ProcessInstance;
 import org.kie.api.runtime.query.QueryContext;
 import org.kie.api.task.model.TaskSummary;
 import org.kie.internal.query.QueryFilter;
+
+import static org.junit.Assert.*;
 
 public class RandomForestPredictionServiceProcessTest extends AbstractKieServicesTest {
 
@@ -70,58 +68,65 @@ public class RandomForestPredictionServiceProcessTest extends AbstractKieService
         // specify GROUP_ID, ARTIFACT_ID, VERSION of your kjar
         return createAndDeployUnit("org.jbpm.test.prediction", "random-forest-test", "1.0.0");
     }
-    
-    
+
+
+    // For this test insert a quantity of true training samples
+    // to verify the random forest class/process is functional.
+    // Expect confidence > 90.0 and approved to be true.
     @Test
-    public void testRandomForestPredictionService() {
-        
-        Map<String, Object> outputs = startAndReturnTaskOutputData(5, true);
-        // first task has no predictions at all
-        assertEquals(0, outputs.size());
-        
-        outputs = startAndReturnTaskOutputData(5, true);
+    public void testRepeatedRandomForestPredictionService() {
+
+        Map<String, Object> outputs;
+
+        outputs = startAndReturnTaskOutputData("john", 5, false);
+        for (int i = 0 ; i < 20; i++) {
+            outputs = startAndReturnTaskOutputData("john", 5, true);
+        }
+        assertTrue((double) outputs.get("confidence") < 1.0);
         assertEquals(true, outputs.get("approved"));
-        assertEquals(10.0, outputs.get("confidence"));
-        
-        outputs = startAndReturnTaskOutputData(5, true);
+    }
+
+    // Insert an equal number of true and false samples, making
+    // sure the total number of samples is larger than the dataset
+    // size threshold (default is 30.) Since the dataset size
+    // threshold will have been met and the probability of true
+    // and false will be nearly equal, we expect confidence to be
+    // lower than 0.55 (55%).
+    @Test
+    public void testEqualProbabilityRandomForestPredictionService() {
+
+        Map<String, Object> outputs = new HashMap<>();
+
+        for (int i = 0 ; i < 60; i++) {
+            outputs = startAndReturnTaskOutputData("john", 5, false);
+            outputs = startAndReturnTaskOutputData("john", 5, true);
+        }
+
+        assertTrue((double) outputs.get("confidence") < 0.55);
+    }
+
+    // Insert a disproportionate partitioning of true and false samples
+    // of a sample set larger than the dataset size threshold. In this
+    // case true will have higher probability and as such we expect
+    // confidence to be high.
+    @Test
+    public void testUnequalProbabilityRandomForestPredictionService() {
+
+        Map<String, Object> outputs = new HashMap<>();
+
+        outputs = startAndReturnTaskOutputData("john", 5, true);
+        for (int i = 0 ; i < 10; i++) {
+            outputs = startAndReturnTaskOutputData("john", 5, false);
+        }
+        for (int i = 0 ; i < 60; i++) {
+            Map<String, Object> o = startAndReturnTaskOutputData("john" , 5, true);
+            if (o != null) { // the training hasn't stopped yet
+                outputs = o;
+            }
+        }
+
+        assertTrue((double) outputs.get("confidence") < 0.4);
         assertEquals(true, outputs.get("approved"));
-        assertEquals(20.0, outputs.get("confidence"));
-        
-        outputs = startAndReturnTaskOutputData(5, true);
-        assertEquals(true, outputs.get("approved"));
-        assertEquals(30.0, outputs.get("confidence"));
-        
-        outputs = startAndReturnTaskOutputData(5, true);
-        assertEquals(true, outputs.get("approved"));
-        assertEquals(40.0, outputs.get("confidence"));
-        
-        outputs = startAndReturnTaskOutputData(5, true);
-        assertEquals(true, outputs.get("approved"));
-        assertEquals(50.0, outputs.get("confidence"));
-        
-        outputs = startAndReturnTaskOutputData(5, true);
-        assertEquals(true, outputs.get("approved"));
-        assertEquals(60.0, outputs.get("confidence"));
-        
-        outputs = startAndReturnTaskOutputData(5, true);
-        assertEquals(true, outputs.get("approved"));
-        assertEquals(70.0, outputs.get("confidence"));
-        
-        outputs = startAndReturnTaskOutputData(5, true);
-        assertEquals(true, outputs.get("approved"));
-        assertEquals(80.0, outputs.get("confidence"));
-        
-        outputs = startAndReturnTaskOutputData(5, true);
-        assertEquals(true, outputs.get("approved"));
-        assertEquals(90.0, outputs.get("confidence"));
-        
-        outputs = startAndReturnTaskOutputData(5, true);
-        assertNull(outputs);
-        
-        // make sure all process instances are completed
-        Collection<ProcessInstanceDesc> activeInstances = runtimeDataService.getProcessInstances(Collections.singletonList(ProcessInstance.STATE_ACTIVE), null, new QueryContext());
-        assertNotNull(activeInstances);
-        assertEquals(0, activeInstances.size());
     }
 
     
@@ -129,7 +134,7 @@ public class RandomForestPredictionServiceProcessTest extends AbstractKieService
      * Helper methods
      */
     
-    protected Map<String, Object> startAndReturnTaskOutputData(Integer level, Boolean approved) {
+    protected Map<String, Object> startAndReturnTaskOutputData(String userId, Integer level, Boolean approved) {
         Map<String, Object> parameters = new HashMap<>();
         parameters.put("item", "test item");
         parameters.put("level", level);
@@ -146,7 +151,7 @@ public class RandomForestPredictionServiceProcessTest extends AbstractKieService
             Map<String, Object> outputs = userTaskService.getTaskOutputContentByTaskId(taskId);
             assertNotNull(outputs);
             
-            userTaskService.completeAutoProgress(taskId, "john", Collections.singletonMap("approved", approved));
+            userTaskService.completeAutoProgress(taskId, userId, Collections.singletonMap("approved", approved));
             
             return outputs;
         }
