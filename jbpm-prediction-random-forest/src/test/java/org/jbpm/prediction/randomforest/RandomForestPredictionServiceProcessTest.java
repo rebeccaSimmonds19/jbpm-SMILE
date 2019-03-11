@@ -142,7 +142,7 @@ public class RandomForestPredictionServiceProcessTest extends AbstractKieService
             }
         }
 
-        assertTrue((double) outputs.get("confidence") < 0.2);
+        assertTrue((double) outputs.get("confidence") < 0.3);
         assertEquals(true, outputs.get("approved"));
     }
 
@@ -167,7 +167,7 @@ public class RandomForestPredictionServiceProcessTest extends AbstractKieService
             Map<String, Object> outputs = userTaskService.getTaskOutputContentByTaskId(taskId);
             assertNotNull(outputs);
             
-            userTaskService.completeAutoProgress(taskId, "john", Collections.singletonMap("approved", approved));
+            userTaskService.completeAutoProgress(taskId, userId, Collections.singletonMap("approved", approved));
             
             return outputs;
         }

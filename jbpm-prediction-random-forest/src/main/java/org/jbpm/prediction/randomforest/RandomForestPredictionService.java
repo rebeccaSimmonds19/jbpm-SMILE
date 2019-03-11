@@ -56,16 +56,25 @@ public class RandomForestPredictionService implements PredictionService {
         if (randomForest == null) {
             return new PredictionOutcome();
         } else {
-            final double[] features = new double[]{};
-            final int prediction = randomForest.predict(features);
-            System.out.println("Prediction:");
-            System.out.println(approved.toString(prediction));
-            System.out.println("Error:");
-            System.out.println(randomForest.error());
-            Map<String, Object> outcomes = new HashMap<>();
-            outcomes.put("approved", Boolean.valueOf(approved.toString(prediction)));
-            outcomes.put("confidence", randomForest.error());
-            return new PredictionOutcome(randomForest.error(), confidenceThreshold, outcomes);
+            final double[] features;
+            try {
+                features = new double[]{
+                        userName.valueOf((String) inputData.get("ActorId")),
+                        level.valueOf(inputData.get("level").toString())
+                };
+                final int prediction = randomForest.predict(features);
+                System.out.println("Prediction:");
+                System.out.println(approved.toString(prediction));
+                System.out.println("Error:");
+                System.out.println(randomForest.error());
+                Map<String, Object> outcomes = new HashMap<>();
+                outcomes.put("approved", Boolean.valueOf(approved.toString(prediction)));
+                outcomes.put("confidence", randomForest.error());
+                return new PredictionOutcome(randomForest.error(), confidenceThreshold, outcomes);
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+            return new PredictionOutcome();
         }
     }
 
