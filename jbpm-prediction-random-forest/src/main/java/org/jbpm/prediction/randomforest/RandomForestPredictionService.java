@@ -49,7 +49,7 @@ public class RandomForestPredictionService implements PredictionService {
 
     /**
      * Converts the normalised Out-Of-Bag error (OOB) into an accuracy measure.
-     * @param error An OOB error between 0 (maximum error) and 1 (minimum error).
+     * @param error An OOB error between 0 (minimum error) and 1 (maximum error).
      * @return An accuracy measure between 0% (minimum accuracy) and 100% (maximum accuracy)
      */
     private static double accuracy(double error) {
