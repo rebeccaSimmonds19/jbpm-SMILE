@@ -34,10 +34,7 @@ public class RandomForestPredictionService implements PredictionService {
     public static final String IDENTIFIER = "RandomForest";
     
     private double confidenceThreshold = 90.0;
-    
-    // just for the sake of tests
-    private Map<String, Boolean> predictions = new HashMap<>();
-    private Map<String, Integer> predictionsConfidence = new HashMap<>();
+    private int NUMBER_OF_TREES = 100;
 
     // Random forest
     private RandomForest randomForest;
@@ -48,6 +45,15 @@ public class RandomForestPredictionService implements PredictionService {
 
     public String getIdentifier() {
         return IDENTIFIER;
+    }
+
+    /**
+     * Converts the normalised Out-Of-Bag error (OOB) into an accuracy measure.
+     * @param error An OOB error between 0 (maximum error) and 1 (minimum error).
+     * @return An accuracy measure between 0% (minimum accuracy) and 100% (maximum accuracy)
+     */
+    private static double accuracy(double error) {
+        return (1.0 - error) * 100.0;
     }
 
     public PredictionOutcome predict(Task task, Map<String, Object> inputData) {
@@ -68,7 +74,7 @@ public class RandomForestPredictionService implements PredictionService {
                 System.out.println(randomForest.error());
                 Map<String, Object> outcomes = new HashMap<>();
                 outcomes.put("approved", Boolean.valueOf(approved.toString(prediction)));
-                outcomes.put("confidence", randomForest.error());
+                outcomes.put("confidence", accuracy(randomForest.error()));
                 return new PredictionOutcome(randomForest.error(), confidenceThreshold, outcomes);
             } catch (ParseException e) {
                 e.printStackTrace();
@@ -92,10 +98,8 @@ public class RandomForestPredictionService implements PredictionService {
         for (int i = 0 ; i < dataset.size() ; i++) {
             ys[i] = (int) dataset.get(i).y;
         }
-        if (dataset.size() <= 2) {
-
-        } else {
-            randomForest = new RandomForest(dataset.x(), ys, 100);
+        if (ys.length >= 2) { // we have enough classes to perform a prediction
+            randomForest = new RandomForest(dataset.x(), ys, NUMBER_OF_TREES);
         }
     }
 

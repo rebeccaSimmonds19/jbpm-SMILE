@@ -16,28 +16,23 @@
 
 package org.jbpm.prediction.randomforest;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.jbpm.services.api.model.DeploymentUnit;
-import org.jbpm.services.api.model.ProcessInstanceDesc;
 import org.jbpm.test.services.AbstractKieServicesTest;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.kie.api.runtime.process.ProcessInstance;
-import org.kie.api.runtime.query.QueryContext;
 import org.kie.api.task.model.TaskSummary;
 import org.kie.internal.query.QueryFilter;
+
+import java.util.*;
+import java.util.logging.Logger;
 
 import static org.junit.Assert.*;
 
 public class RandomForestPredictionServiceProcessTest extends AbstractKieServicesTest {
+
+    private Logger logger = Logger.getLogger(RandomForestPredictionServiceProcessTest.class.getName());
 
     private List<Long> instances = new ArrayList<>();
     
@@ -82,7 +77,10 @@ public class RandomForestPredictionServiceProcessTest extends AbstractKieService
         for (int i = 0 ; i < 20; i++) {
             outputs = startAndReturnTaskOutputData("john", 5, true);
         }
-        assertTrue((double) outputs.get("confidence") < 1.0);
+        final double confidence = (double) outputs.get("confidence");
+        logger.info("Confidence: " + confidence);
+
+        assertTrue((double) outputs.get("confidence") > 90.0);
         assertEquals(true, outputs.get("approved"));
     }
 
@@ -97,12 +95,14 @@ public class RandomForestPredictionServiceProcessTest extends AbstractKieService
 
         Map<String, Object> outputs = new HashMap<>();
 
-        for (int i = 0 ; i < 60; i++) {
-            outputs = startAndReturnTaskOutputData("john", 5, false);
+        for (int i = 0 ; i < 100; i++) {
+            startAndReturnTaskOutputData("john", 5, false);
             outputs = startAndReturnTaskOutputData("john", 5, true);
         }
 
-        assertTrue((double) outputs.get("confidence") < 0.55);
+        final double confidence = (double) outputs.get("confidence");
+        logger.info("Confidence: " + confidence);
+        assertTrue(confidence < 55.0 && confidence > 45.0);
     }
 
     // Insert a disproportionate partitioning of true and false samples
@@ -112,20 +112,23 @@ public class RandomForestPredictionServiceProcessTest extends AbstractKieService
     @Test
     public void testUnequalProbabilityRandomForestPredictionService() {
 
-        Map<String, Object> outputs = new HashMap<>();
+        Map<String, Object> outputs;
 
         outputs = startAndReturnTaskOutputData("john", 5, true);
         for (int i = 0 ; i < 10; i++) {
             outputs = startAndReturnTaskOutputData("john", 5, false);
         }
-        for (int i = 0 ; i < 60; i++) {
+        for (int i = 0 ; i < 90; i++) {
             Map<String, Object> o = startAndReturnTaskOutputData("john" , 5, true);
             if (o != null) { // the training hasn't stopped yet
                 outputs = o;
             }
         }
 
-        assertTrue((double) outputs.get("confidence") < 0.4);
+        final double confidence = (double) outputs.get("confidence");
+        logger.info("Confidence: " + confidence);
+
+        assertTrue((double) outputs.get("confidence") > 85.0);
         assertEquals(true, outputs.get("approved"));
     }
 
