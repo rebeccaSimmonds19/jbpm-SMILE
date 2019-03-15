@@ -33,8 +33,10 @@ public class RandomForestPredictionService implements PredictionService {
     
     public static final String IDENTIFIER = "RandomForest";
     
-    private double confidenceThreshold = 90.0;
+    private double confidenceThreshold = 100.0;
     private int NUMBER_OF_TREES = 100;
+    private int MIN_COUNT = 5;
+    private int count = 0;
 
     // Random forest
     private RandomForest randomForest;
@@ -52,7 +54,10 @@ public class RandomForestPredictionService implements PredictionService {
      * @param error An OOB error between 0 (minimum error) and 1 (maximum error).
      * @return An accuracy measure between 0% (minimum accuracy) and 100% (maximum accuracy)
      */
-    private static double accuracy(double error) {
+    private double accuracy(double error) {
+    	if (count < MIN_COUNT) {
+    		return 0D;
+    	}
         return (1.0 - error) * 100.0;
     }
 
@@ -68,14 +73,17 @@ public class RandomForestPredictionService implements PredictionService {
             try {
                 features = new double[]{approval.valueOf(String.valueOf(_approval.hashCode()))};
                 final int prediction = randomForest.predict(features);
-                System.out.println("Prediction:");
-                System.out.println(approved.toString(prediction));
-                System.out.println("Error:");
-                System.out.println(randomForest.error());
+//                System.out.println("Prediction:");
+//                System.out.println(approved.toString(prediction));
+//                System.out.println("Error:");
+//                System.out.println(randomForest.error());
                 Map<String, Object> outcomes = new HashMap<>();
+                double accuracy = accuracy(randomForest.error());
                 outcomes.put("approved", Boolean.valueOf(approved.toString(prediction)));
-                outcomes.put("confidence", accuracy(randomForest.error()));
-                return new PredictionOutcome(randomForest.error(), confidenceThreshold, outcomes);
+                outcomes.put("confidence", accuracy);
+                System.out.print("Input: actorId = " + inputData.get("ActorId") + ", item = " + inputData.get("item") + ", level = " + inputData.get("level"));
+                System.out.println("; predicting '" + outcomes.get("approved") + "' with accuracy " + accuracy + "%");
+                return new PredictionOutcome(accuracy, confidenceThreshold, outcomes);
             } catch (ParseException e) {
                 e.printStackTrace();
             }
@@ -84,8 +92,10 @@ public class RandomForestPredictionService implements PredictionService {
     }
 
     public void train(Task task, Map<String, Object> inputData, Map<String, Object> outputData) {
-        System.out.println("Training the RF!");
-        System.out.println("with:" + outputData.toString());
+//        System.out.println("Training the RF!");
+//        System.out.println("with:" + outputData.toString());
+    	
+    	count++;
 
         final Approval _approval = Approval.create((String) inputData.get("ActorId"), (Integer) inputData.get("level"));
         try {
