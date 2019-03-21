@@ -96,7 +96,7 @@ public class RandomForestPredictionService implements PredictionService {
                 outcomes.put("approved", Boolean.valueOf(approved.toString(prediction)));
                 outcomes.put("confidence", accuracy);
 
-                System.out.print(String.format("p(%s)=%s, p(%s)=%s, ", userValue, formatter.format(posteriori[0]), levelValue, formatter.format(posteriori[1])));
+                System.out.print(String.format("p(true)=%s, p(false)=%s, ", formatter.format(posteriori[0]), formatter.format(posteriori[1])));
                 System.out.print("Input: actorId = " + inputData.get("ActorId") + ", item = " + inputData.get("item") + ", level = " + inputData.get("level"));
                 System.out.println("; predicting '" + outcomes.get("approved") + "' with accuracy " + formatter.format(accuracy) + "%");
                 return new PredictionOutcome(accuracy, confidenceThreshold, outcomes);

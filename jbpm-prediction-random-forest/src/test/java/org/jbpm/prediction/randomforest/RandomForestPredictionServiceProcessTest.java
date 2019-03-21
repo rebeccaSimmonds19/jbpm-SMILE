@@ -195,8 +195,8 @@ public class RandomForestPredictionServiceProcessTest extends AbstractKieService
     	startAndReturnTaskOutputData("test item", "john", 5, true);
     	for (int i = 0 ; i < 50; i++) {
     		System.out.print("[" + i + "] ");
-    		startAndReturnTaskOutputData("test item", "john", 5, false);
-    		startAndReturnTaskOutputData("test item", "mary", 5, true);
+    		startAndReturnTaskOutputData("test item", "john", i % 5, false);
+    		startAndReturnTaskOutputData("test item", "mary", i % 5, true);
         }
 		startAndReturnTaskOutputData("test item2", "krisv", 10, true);
 		startAndReturnTaskOutputData("test item2", "krisv", 11, false);
