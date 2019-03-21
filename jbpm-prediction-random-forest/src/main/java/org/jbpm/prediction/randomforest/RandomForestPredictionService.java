@@ -16,17 +16,20 @@
 
 package org.jbpm.prediction.randomforest;
 
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.text.ParseException;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.kie.api.task.model.Task;
 import org.kie.internal.task.api.prediction.PredictionOutcome;
 import org.kie.internal.task.api.prediction.PredictionService;
+import smile.classification.DecisionTree;
 import smile.classification.RandomForest;
-import smile.data.Attribute;
-import smile.data.AttributeDataset;
-import smile.data.NominalAttribute;
+import smile.data.*;
 
 
 public class RandomForestPredictionService implements PredictionService {
@@ -34,16 +37,18 @@ public class RandomForestPredictionService implements PredictionService {
     public static final String IDENTIFIER = "RandomForest";
     
     private double confidenceThreshold = 100.0;
-    private int NUMBER_OF_TREES = 100;
+    private int NUMBER_OF_TREES = 500;
     private int MIN_COUNT = 5;
     private int count = 0;
 
     // Random forest
     private RandomForest randomForest;
-    private Attribute approval = new NominalAttribute("user");
+    private Attribute user = new NominalAttribute("user");
+    private Attribute level = new NominalAttribute("level");
     private Attribute approved = new NominalAttribute("approved");
-    private AttributeDataset dataset = new AttributeDataset("test", new Attribute[]{approval}, approved);
+    private AttributeDataset dataset = new AttributeDataset("test", new Attribute[]{user, level}, approved);
 
+    private static NumberFormat formatter = new DecimalFormat("#0.00");
 
     public String getIdentifier() {
         return IDENTIFIER;
@@ -61,6 +66,14 @@ public class RandomForestPredictionService implements PredictionService {
         return (1.0 - error) * 100.0;
     }
 
+    private double maxPosterior(double[] posteriori) {
+        double max = posteriori[0];
+        for (double v : posteriori) {
+            max = Math.max(max, v);
+        }
+        return max*100.0;
+    }
+
     public PredictionOutcome predict(Task task, Map<String, Object> inputData) {
         String key = task.getName() + task.getTaskData().getDeploymentId()+ inputData.get("level");
 
@@ -68,21 +81,24 @@ public class RandomForestPredictionService implements PredictionService {
         if (randomForest == null) {
             return new PredictionOutcome();
         } else {
-            final Approval _approval = Approval.create((String) inputData.get("ActorId"), (Integer) inputData.get("level"));
             final double[] features;
+            final String userValue = (String) inputData.get("ActorId");
+            final int levelValue = (Integer) inputData.get("level");
             try {
-                features = new double[]{approval.valueOf(String.valueOf(_approval.hashCode()))};
-                final int prediction = randomForest.predict(features);
-//                System.out.println("Prediction:");
-//                System.out.println(approved.toString(prediction));
-//                System.out.println("Error:");
-//                System.out.println(randomForest.error());
+                features = new double[]{
+                        user.valueOf(userValue),
+                        level.valueOf(String.valueOf(levelValue))
+                };
+                double[] posteriori = new double[features.length];
+                final int prediction = randomForest.predict(features, posteriori);
                 Map<String, Object> outcomes = new HashMap<>();
-                double accuracy = accuracy(randomForest.error());
+                double accuracy = maxPosterior(posteriori);
                 outcomes.put("approved", Boolean.valueOf(approved.toString(prediction)));
                 outcomes.put("confidence", accuracy);
+
+                System.out.print(String.format("p(%s)=%s, p(%s)=%s, ", userValue, formatter.format(posteriori[0]), levelValue, formatter.format(posteriori[1])));
                 System.out.print("Input: actorId = " + inputData.get("ActorId") + ", item = " + inputData.get("item") + ", level = " + inputData.get("level"));
-                System.out.println("; predicting '" + outcomes.get("approved") + "' with accuracy " + accuracy + "%");
+                System.out.println("; predicting '" + outcomes.get("approved") + "' with accuracy " + formatter.format(accuracy) + "%");
                 return new PredictionOutcome(accuracy, confidenceThreshold, outcomes);
             } catch (ParseException e) {
                 e.printStackTrace();
@@ -92,14 +108,16 @@ public class RandomForestPredictionService implements PredictionService {
     }
 
     public void train(Task task, Map<String, Object> inputData, Map<String, Object> outputData) {
-//        System.out.println("Training the RF!");
-//        System.out.println("with:" + outputData.toString());
-    	
-    	count++;
 
-        final Approval _approval = Approval.create((String) inputData.get("ActorId"), (Integer) inputData.get("level"));
+    	count++;
+        final String userValue = (String) inputData.get("ActorId");
+        final int levelValue = (Integer) inputData.get("level");
+
         try {
-            dataset.add(new double[]{approval.valueOf(String.valueOf(_approval.hashCode()))}, approved.valueOf(outputData.get("approved").toString()));
+            dataset.add(new double[]{
+                    user.valueOf(userValue),
+                    level.valueOf(String.valueOf(levelValue))
+            }, approved.valueOf(outputData.get("approved").toString()));
 
         } catch (ParseException e) {
             e.printStackTrace();
@@ -109,7 +127,12 @@ public class RandomForestPredictionService implements PredictionService {
             ys[i] = (int) dataset.get(i).y;
         }
         if (ys.length >= 2) { // we have enough classes to perform a prediction
-            randomForest = new RandomForest(dataset.x(), ys, NUMBER_OF_TREES);
+//            System.out.println("================================================");
+//            System.out.println(dataset.toString());
+//            randomForest = new RandomForest(new Attribute[]{user, level}, dataset.x(), ys, NUMBER_OF_TREES, 100, 100, 2, 0.95, DecisionTree.SplitRule.GINI);
+            randomForest = new RandomForest(dataset, NUMBER_OF_TREES);
+//            System.out.println(dataset);
+//            System.out.println(randomForest.getTrees()[200].dot());
         }
     }
 
