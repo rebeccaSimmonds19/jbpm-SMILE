@@ -136,11 +136,6 @@ public class RandomForestPredictionServiceProcessTest extends AbstractKieService
     // evolve when you then keep sending false 
     @Test
     public void test1() {
-    	// TODO why do I need one input to start, different from the others, that seem to be ignored? otherwise I get exception
-    	startAndReturnTaskOutputData("test item", "john", 5, true);
-    	startAndReturnTaskOutputData("test item", "john", 5, false);
-    	startAndReturnTaskOutputData("test item", "john", 5, false);
-    	startAndReturnTaskOutputData("test item", "john", 5, false);
     	for (int i = 0 ; i < 17; i++) {
     		startAndReturnTaskOutputData("test item", "john", 5, true);
         }
@@ -152,8 +147,6 @@ public class RandomForestPredictionServiceProcessTest extends AbstractKieService
     // shows how after passing min count of 2 input, accuracy goes to >95% very quickly
     @Test
     public void test2() {
-    	// TODO why do I need one input to start, different from the others, that seem to be ignored? otherwise I get exception
-    	startAndReturnTaskOutputData("test item", "john", 5, true);
     	for (int i = 0 ; i < 30; i++) {
     		System.out.print("[" + i + "] ");
     		startAndReturnTaskOutputData("test item", "john", 5, false);
@@ -165,8 +158,6 @@ public class RandomForestPredictionServiceProcessTest extends AbstractKieService
     // it takes a while longer to get to high accuracy
     @Test
     public void test3() {
-    	// TODO why do I need one input to start, different from the others, that seem to be ignored? otherwise I get exception
-    	startAndReturnTaskOutputData("test item", "john", 5, true);
     	for (int i = 0 ; i < 50; i++) {
     		System.out.print("[" + i + "] ");
     		startAndReturnTaskOutputData("test item", "john", i % 5, false);
@@ -178,21 +169,18 @@ public class RandomForestPredictionServiceProcessTest extends AbstractKieService
     // it does not even respond to different inputs
     @Test
     public void test4() {
-    	// TODO why do I need one input to start, different from the others, that seem to be ignored? otherwise I get exception
-    	startAndReturnTaskOutputData("test item", "john", 5, true);
     	for (int i = 0 ; i < 10; i++) {
     		System.out.print("[" + i + "] ");
     		startAndReturnTaskOutputData("test item", "john", i % 5, false);
         }
 		startAndReturnTaskOutputData("test item2", "mary", 10, true);
+        startAndReturnTaskOutputData("test item2", "mary", 10, true);
     }
     
     // shows how after passing min count of 2 input with 1 irrelevant param switching between 5 possible values,
     // accuracy of completely new input is extremely high, why?
     @Test
     public void test5() {
-    	// TODO why do I need one input to start, different from the others, that seem to be ignored? otherwise I get exception
-    	startAndReturnTaskOutputData("test item", "john", 5, true);
     	for (int i = 0 ; i < 50; i++) {
     		System.out.print("[" + i + "] ");
     		startAndReturnTaskOutputData("test item", "john", i % 5, false);

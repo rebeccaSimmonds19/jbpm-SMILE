@@ -19,10 +19,7 @@ package org.jbpm.prediction.randomforest;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.ParseException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import org.kie.api.task.model.Task;
 import org.kie.internal.task.api.prediction.PredictionOutcome;
@@ -66,6 +63,11 @@ public class RandomForestPredictionService implements PredictionService {
         return (1.0 - error) * 100.0;
     }
 
+    /**
+     * Return the maximum of the label's posteriors for a given prediction
+     * @param posteriori An array with all the label's posterior
+     * @return The maximum posterior (as percentage)
+     */
     private double maxPosterior(double[] posteriori) {
         double max = posteriori[0];
         for (double v : posteriori) {
@@ -74,9 +76,31 @@ public class RandomForestPredictionService implements PredictionService {
         return max*100.0;
     }
 
-    public PredictionOutcome predict(Task task, Map<String, Object> inputData) {
-        String key = task.getName() + task.getTaskData().getDeploymentId()+ inputData.get("level");
+    /**
+     * Return all labels for the current dataset
+     * @return An array of int with all the labels
+     */
+    private int[] getLabels() {
+        int[] ys = new int[dataset.size()];
+        for (int i = 0 ; i < dataset.size() ; i++) {
+            ys[i] = (int) dataset.get(i).y;
+        }
+        return ys;
+    }
 
+    /**
+     * Return unique labels in this dataset
+     * @return A Set containing the unique labels in this dataset
+     */
+    private Set<Integer> getUniqueLabels() {
+        final Set<Integer> unique = new HashSet<>();
+        for (int label : getLabels()) {
+            unique.add(label);
+        }
+        return unique;
+    }
+
+    public PredictionOutcome predict(Task task, Map<String, Object> inputData) {
 
         if (randomForest == null) {
             return new PredictionOutcome();
@@ -89,10 +113,13 @@ public class RandomForestPredictionService implements PredictionService {
                         user.valueOf(userValue),
                         level.valueOf(String.valueOf(levelValue))
                 };
-                double[] posteriori = new double[features.length];
+                // calculate accuracy as the maximum posterior for this prediction
+                System.out.println("Posteriori: " + getUniqueLabels());
+                double[] posteriori = new double[getUniqueLabels().size()];
                 final int prediction = randomForest.predict(features, posteriori);
-                Map<String, Object> outcomes = new HashMap<>();
                 double accuracy = maxPosterior(posteriori);
+
+                Map<String, Object> outcomes = new HashMap<>();
                 outcomes.put("approved", Boolean.valueOf(approved.toString(prediction)));
                 outcomes.put("confidence", accuracy);
 
@@ -122,11 +149,8 @@ public class RandomForestPredictionService implements PredictionService {
         } catch (ParseException e) {
             e.printStackTrace();
         }
-        int[] ys = new int[dataset.size()];
-        for (int i = 0 ; i < dataset.size() ; i++) {
-            ys[i] = (int) dataset.get(i).y;
-        }
-        if (ys.length >= 2) { // we have enough classes to perform a prediction
+        final Set<Integer> uniqueLabels = getUniqueLabels();
+        if (uniqueLabels.size() >= 2) { // we have enough classes to perform a prediction
 //            System.out.println("================================================");
 //            System.out.println(dataset.toString());
 //            randomForest = new RandomForest(new Attribute[]{user, level}, dataset.x(), ys, NUMBER_OF_TREES, 100, 100, 2, 0.95, DecisionTree.SplitRule.GINI);
