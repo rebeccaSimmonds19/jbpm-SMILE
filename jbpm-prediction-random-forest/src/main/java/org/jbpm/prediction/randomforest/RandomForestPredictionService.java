@@ -34,7 +34,7 @@ public class RandomForestPredictionService implements PredictionService {
     public static final String IDENTIFIER = "RandomForest";
     
     private double confidenceThreshold = 100.0;
-    private int NUMBER_OF_TREES = 500;
+    private int NUMBER_OF_TREES = 100;
     private int MIN_COUNT = 5;
     private int count = 0;
 
@@ -114,7 +114,7 @@ public class RandomForestPredictionService implements PredictionService {
                         level.valueOf(String.valueOf(levelValue))
                 };
                 // calculate accuracy as the maximum posterior for this prediction
-                System.out.println("Posteriori: " + getUniqueLabels());
+                System.out.println(Arrays.toString(randomForest.importance()));
                 double[] posteriori = new double[getUniqueLabels().size()];
                 final int prediction = randomForest.predict(features, posteriori);
                 double accuracy = maxPosterior(posteriori);
@@ -122,6 +122,7 @@ public class RandomForestPredictionService implements PredictionService {
                 Map<String, Object> outcomes = new HashMap<>();
                 outcomes.put("approved", Boolean.valueOf(approved.toString(prediction)));
                 outcomes.put("confidence", accuracy);
+                outcomes.put("oob", accuracy(randomForest.error()));
 
                 System.out.print(String.format("p(true)=%s, p(false)=%s, ", formatter.format(posteriori[0]), formatter.format(posteriori[1])));
                 System.out.print("Input: actorId = " + inputData.get("ActorId") + ", item = " + inputData.get("item") + ", level = " + inputData.get("level"));
@@ -151,12 +152,10 @@ public class RandomForestPredictionService implements PredictionService {
         }
         final Set<Integer> uniqueLabels = getUniqueLabels();
         if (uniqueLabels.size() >= 2) { // we have enough classes to perform a prediction
-//            System.out.println("================================================");
-//            System.out.println(dataset.toString());
-//            randomForest = new RandomForest(new Attribute[]{user, level}, dataset.x(), ys, NUMBER_OF_TREES, 100, 100, 2, 0.95, DecisionTree.SplitRule.GINI);
-            randomForest = new RandomForest(dataset, NUMBER_OF_TREES);
-//            System.out.println(dataset);
-//            System.out.println(randomForest.getTrees()[200].dot());
+            randomForest = new RandomForest(new Attribute[]{user, level}, dataset.x(),
+                    getLabels(),
+                    NUMBER_OF_TREES, 100, 5, 1, 0.5,
+                    DecisionTree.SplitRule.ENTROPY);
         }
     }
 

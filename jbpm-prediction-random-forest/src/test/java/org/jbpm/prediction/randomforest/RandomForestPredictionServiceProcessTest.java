@@ -16,6 +16,7 @@
 
 package org.jbpm.prediction.randomforest;
 
+import antlr.collections.impl.IntRange;
 import org.jbpm.services.api.model.DeploymentUnit;
 import org.jbpm.test.services.AbstractKieServicesTest;
 import org.junit.After;
@@ -27,6 +28,8 @@ import org.kie.internal.query.QueryFilter;
 
 import java.util.*;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.junit.Assert.*;
 
@@ -72,13 +75,19 @@ public class RandomForestPredictionServiceProcessTest extends AbstractKieService
     public void testRepeatedRandomForestPredictionService() {
 
         Map<String, Object> outputs;
+        List<Double> oobError = new ArrayList<>();
+        List<Double> posteriors = new ArrayList<>();
 
         outputs = startAndReturnTaskOutputData("test item", "john", 5, false);
         for (int i = 0 ; i < 20; i++) {
             outputs = startAndReturnTaskOutputData("test item", "john", 5, true);
+            Double oob = (Double) outputs.get("oob");
+            Double posterior = (Double) outputs.get("confidence");
+            if (oob!=null) oobError.add(oob);
+            if (posterior!=null) posteriors.add(posterior);
         }
-        final double confidence = (double) outputs.get("confidence");
-        logger.info("Confidence: " + confidence);
+
+        final List<Integer> x = IntStream.range(0, oobError.size()).boxed().collect(Collectors.toList());
 
         assertTrue((double) outputs.get("confidence") > 90.0);
         assertEquals(true, outputs.get("approved"));
@@ -94,14 +103,22 @@ public class RandomForestPredictionServiceProcessTest extends AbstractKieService
     public void testEqualProbabilityRandomForestPredictionService() {
 
         Map<String, Object> outputs = new HashMap<>();
+        List<Double> oobError = new ArrayList<>();
+        List<Double> posteriors = new ArrayList<>();
+
 
         for (int i = 0 ; i < 100; i++) {
             startAndReturnTaskOutputData("test item", "john", 5, false);
             outputs = startAndReturnTaskOutputData("test item", "john", 5, true);
+            Double oob = (Double) outputs.get("oob");
+            Double posterior = (Double) outputs.get("confidence");
+            if (oob!=null) oobError.add(oob);
+            if (posterior!=null) posteriors.add(posterior);
         }
 
+        final List<Integer> x = IntStream.range(0, oobError.size()).boxed().collect(Collectors.toList());
+
         final double confidence = (double) outputs.get("confidence");
-        logger.info("Confidence: " + confidence);
         assertTrue(confidence < 55.0 && confidence > 45.0);
     }
 
@@ -113,20 +130,31 @@ public class RandomForestPredictionServiceProcessTest extends AbstractKieService
     public void testUnequalProbabilityRandomForestPredictionService() {
 
         Map<String, Object> outputs;
+        List<Double> oobError = new ArrayList<>();
+        List<Double> posteriors = new ArrayList<>();
+
 
         outputs = startAndReturnTaskOutputData("test item", "john", 5, true);
         for (int i = 0 ; i < 10; i++) {
             outputs = startAndReturnTaskOutputData("test item", "john", 5, false);
+            Double oob = (Double) outputs.get("oob");
+            Double posterior = (Double) outputs.get("confidence");
+            if (oob!=null) oobError.add(oob);
+            if (posterior!=null) posteriors.add(posterior);
         }
         for (int i = 0 ; i < 90; i++) {
             Map<String, Object> o = startAndReturnTaskOutputData("test item", "john" , 5, true);
             if (o != null) { // the training hasn't stopped yet
                 outputs = o;
             }
+            Double oob = (Double) outputs.get("oob");
+            Double posterior = (Double) outputs.get("confidence");
+            if (oob!=null) oobError.add(oob);
+            if (posterior!=null) posteriors.add(posterior);
+
         }
 
-        final double confidence = (double) outputs.get("confidence");
-        logger.info("Confidence: " + confidence);
+        final List<Integer> x = IntStream.range(0, oobError.size()).boxed().collect(Collectors.toList());
 
         assertTrue((double) outputs.get("confidence") > 85.0);
         assertEquals(true, outputs.get("approved"));
@@ -136,63 +164,251 @@ public class RandomForestPredictionServiceProcessTest extends AbstractKieService
     // evolve when you then keep sending false 
     @Test
     public void test1() {
-    	for (int i = 0 ; i < 17; i++) {
-    		startAndReturnTaskOutputData("test item", "john", 5, true);
+        Map<String, Object> outputs;
+        List<Double> oobError = new ArrayList<>();
+        List<Double> posteriors = new ArrayList<>();
+
+        for (int i = 0 ; i < 17; i++) {
+    		outputs = startAndReturnTaskOutputData("test item", "john", 5, true);
+            Double oob = (Double) outputs.get("oob");
+            Double posterior = (Double) outputs.get("confidence");
+            if (oob!=null) oobError.add(oob);
+            if (posterior!=null) posteriors.add(posterior);
+
         }
     	for (int i = 0 ; i < 40; i++) {
-    		startAndReturnTaskOutputData("test item", "john", 5, false);
+    		outputs = startAndReturnTaskOutputData("test item", "john", 5, false);
+            Double oob = (Double) outputs.get("oob");
+            Double posterior = (Double) outputs.get("confidence");
+            if (oob!=null) oobError.add(oob);
+            if (posterior!=null) posteriors.add(posterior);
         }
+
+        final List<Integer> x = IntStream.range(0, oobError.size()).boxed().collect(Collectors.toList());
+
     }
     
     // shows how after passing min count of 2 input, accuracy goes to >95% very quickly
     @Test
     public void test2() {
-    	for (int i = 0 ; i < 30; i++) {
+        Map<String, Object> outputs;
+        List<Double> oobError = new ArrayList<>();
+        List<Double> posteriors = new ArrayList<>();
+
+        for (int i = 0 ; i < 30; i++) {
     		System.out.print("[" + i + "] ");
-    		startAndReturnTaskOutputData("test item", "john", 5, false);
-    		startAndReturnTaskOutputData("test item", "mary", 5, true);
+    		outputs = startAndReturnTaskOutputData("test item", "john", 5, false);
+            Double oob = (Double) outputs.get("oob");
+            Double posterior = (Double) outputs.get("confidence");
+            if (oob!=null) oobError.add(oob);
+            if (posterior!=null) posteriors.add(posterior);
+            outputs = startAndReturnTaskOutputData("test item", "mary", 5, true);
+            oob = (Double) outputs.get("oob");
+            posterior = (Double) outputs.get("confidence");
+            if (oob!=null) oobError.add(oob);
+            if (posterior!=null) posteriors.add(posterior);
         }
+
+        final List<Integer> x = IntStream.range(0, oobError.size()).boxed().collect(Collectors.toList());
     }
     
     // shows how after passing min count of 2 input with 1 irrelevant param switching between 5 possible values,
     // it takes a while longer to get to high accuracy
     @Test
     public void test3() {
-    	for (int i = 0 ; i < 50; i++) {
+        Map<String, Object> outputs;
+        List<Double> oobError = new ArrayList<>();
+        List<Double> posteriors = new ArrayList<>();
+
+        for (int i = 0 ; i < 50; i++) {
     		System.out.print("[" + i + "] ");
-    		startAndReturnTaskOutputData("test item", "john", i % 5, false);
-    		startAndReturnTaskOutputData("test item", "mary", i % 5, true);
+    		outputs = startAndReturnTaskOutputData("test item", "john", i % 5, false);
+            Double oob = (Double) outputs.get("oob");
+            Double posterior = (Double) outputs.get("confidence");
+            if (oob!=null) oobError.add(oob);
+            if (posterior!=null) posteriors.add(posterior);
+
+            outputs = startAndReturnTaskOutputData("test item", "mary", i % 5, true);
+            oob = (Double) outputs.get("oob");
+            posterior = (Double) outputs.get("confidence");
+            if (oob!=null) oobError.add(oob);
+            if (posterior!=null) posteriors.add(posterior);
         }
+
+        final List<Integer> x = IntStream.range(0, oobError.size()).boxed().collect(Collectors.toList());
     }
     
     // shows how the accuracy goes extremely quickly to 100.0% if you give it the same result initially
     // it does not even respond to different inputs
     @Test
     public void test4() {
-    	for (int i = 0 ; i < 10; i++) {
+        Map<String, Object> outputs;
+        List<Double> oobError = new ArrayList<>();
+        List<Double> posteriors = new ArrayList<>();
+
+        for (int i = 0 ; i < 10; i++) {
     		System.out.print("[" + i + "] ");
-    		startAndReturnTaskOutputData("test item", "john", i % 5, false);
+    		outputs = startAndReturnTaskOutputData("test item", "john", i % 5, false);
+            Double oob = (Double) outputs.get("oob");
+            Double posterior = (Double) outputs.get("confidence");
+            if (oob!=null) oobError.add(oob);
+            if (posterior!=null) posteriors.add(posterior);
+
         }
-		startAndReturnTaskOutputData("test item2", "mary", 10, true);
-        startAndReturnTaskOutputData("test item2", "mary", 10, true);
+		outputs = startAndReturnTaskOutputData("test item2", "mary", 10, true);
+        Double oob = (Double) outputs.get("oob");
+        Double posterior = (Double) outputs.get("confidence");
+        if (oob!=null) oobError.add(oob);
+        if (posterior!=null) posteriors.add(posterior);
+
+        outputs = startAndReturnTaskOutputData("test item2", "mary", 10, true);
+        oob = (Double) outputs.get("oob");
+        posterior = (Double) outputs.get("confidence");
+        if (oob!=null) oobError.add(oob);
+        if (posterior!=null) posteriors.add(posterior);
+
+        final List<Integer> x = IntStream.range(0, oobError.size()).boxed().collect(Collectors.toList());
     }
     
     // shows how after passing min count of 2 input with 1 irrelevant param switching between 5 possible values,
     // accuracy of completely new input is extremely high, why?
     @Test
     public void test5() {
-    	for (int i = 0 ; i < 50; i++) {
+        Map<String, Object> outputs;
+        List<Double> oobError = new ArrayList<>();
+        List<Double> posteriors = new ArrayList<>();
+
+        for (int i = 0 ; i < 50; i++) {
     		System.out.print("[" + i + "] ");
-    		startAndReturnTaskOutputData("test item", "john", i % 5, false);
-    		startAndReturnTaskOutputData("test item", "mary", i % 5, true);
+    		outputs = startAndReturnTaskOutputData("test item", "john", i % 5, false);
+            Double oob = (Double) outputs.get("oob");
+            Double posterior = (Double) outputs.get("confidence");
+            if (oob!=null) oobError.add(oob);
+            if (posterior!=null) posteriors.add(posterior);
+
+            outputs = startAndReturnTaskOutputData("test item", "mary", i % 5, true);
+            oob = (Double) outputs.get("oob");
+            posterior = (Double) outputs.get("confidence");
+            if (oob!=null) oobError.add(oob);
+            if (posterior!=null) posteriors.add(posterior);
+
+
         }
-		startAndReturnTaskOutputData("test item2", "krisv", 10, true);
-		startAndReturnTaskOutputData("test item2", "krisv", 11, false);
-		startAndReturnTaskOutputData("test item2", "krisv", 11, false);
-        startAndReturnTaskOutputData("test item2", "krisv", 10, true);
-        startAndReturnTaskOutputData("test item2", "krisv", 10, false);
-        startAndReturnTaskOutputData("test item", "john", 5, false);
-        startAndReturnTaskOutputData("test item2", "krisv", 10, true);
+		outputs = startAndReturnTaskOutputData("test item2", "krisv", 10, true);
+        Double oob = (Double) outputs.get("oob");
+        Double posterior = (Double) outputs.get("confidence");
+        if (oob!=null) oobError.add(oob);
+        if (posterior!=null) posteriors.add(posterior);
+
+        outputs = startAndReturnTaskOutputData("test item2", "krisv", 11, false);
+        oob = (Double) outputs.get("oob");
+        posterior = (Double) outputs.get("confidence");
+        if (oob!=null) oobError.add(oob);
+        if (posterior!=null) posteriors.add(posterior);
+
+        outputs = startAndReturnTaskOutputData("test item2", "krisv", 11, false);
+        oob = (Double) outputs.get("oob");
+        posterior = (Double) outputs.get("confidence");
+        if (oob!=null) oobError.add(oob);
+        if (posterior!=null) posteriors.add(posterior);
+
+        outputs = startAndReturnTaskOutputData("test item2", "krisv", 10, true);
+        oob = (Double) outputs.get("oob");
+        posterior = (Double) outputs.get("confidence");
+        if (oob!=null) oobError.add(oob);
+        if (posterior!=null) posteriors.add(posterior);
+
+        outputs = startAndReturnTaskOutputData("test item2", "krisv", 10, false);
+        oob = (Double) outputs.get("oob");
+        posterior = (Double) outputs.get("confidence");
+        if (oob!=null) oobError.add(oob);
+        if (posterior!=null) posteriors.add(posterior);
+
+        outputs = startAndReturnTaskOutputData("test item", "john", 5, false);
+        oob = (Double) outputs.get("oob");
+        posterior = (Double) outputs.get("confidence");
+        if (oob!=null) oobError.add(oob);
+        if (posterior!=null) posteriors.add(posterior);
+
+        outputs = startAndReturnTaskOutputData("test item2", "krisv", 10, true);
+        oob = (Double) outputs.get("oob");
+        posterior = (Double) outputs.get("confidence");
+        if (oob!=null) oobError.add(oob);
+        if (posterior!=null) posteriors.add(posterior);
+
+        final List<Integer> x = IntStream.range(0, oobError.size()).boxed().collect(Collectors.toList());
+    }
+
+    @Test
+    public void test6() {
+        Map<String, Object> outputs;
+        List<Double> oobError = new ArrayList<>();
+        List<Double> posteriors = new ArrayList<>();
+
+        for (int i = 0 ; i < 100; i++) {
+            System.out.print("[" + i + "] ");
+            outputs = startAndReturnTaskOutputData("test item", "john", i % 5, !(new Random().nextDouble() < 0.9));
+            Double oob = (Double) outputs.get("oob");
+            Double posterior = (Double) outputs.get("confidence");
+            if (oob!=null) oobError.add(oob);
+            if (posterior!=null) posteriors.add(posterior);
+
+            outputs = startAndReturnTaskOutputData("test item", "mary", i % 5, new Random().nextDouble() < 0.9);
+            oob = (Double) outputs.get("oob");
+            posterior = (Double) outputs.get("confidence");
+            if (oob!=null) oobError.add(oob);
+            if (posterior!=null) posteriors.add(posterior);
+
+            outputs = startAndReturnTaskOutputData("test item", "mary", i % 3, new Random().nextDouble() < 0.9);
+            oob = (Double) outputs.get("oob");
+            posterior = (Double) outputs.get("confidence");
+            if (oob!=null) oobError.add(oob);
+            if (posterior!=null) posteriors.add(posterior);
+
+        }
+        outputs = startAndReturnTaskOutputData("test item2", "krisv", 10, true);
+        Double oob = (Double) outputs.get("oob");
+        Double posterior = (Double) outputs.get("confidence");
+        if (oob!=null) oobError.add(oob);
+        if (posterior!=null) posteriors.add(posterior);
+
+        outputs = startAndReturnTaskOutputData("test item2", "krisv", 11, false);
+        oob = (Double) outputs.get("oob");
+        posterior = (Double) outputs.get("confidence");
+        if (oob!=null) oobError.add(oob);
+        if (posterior!=null) posteriors.add(posterior);
+
+        outputs = startAndReturnTaskOutputData("test item2", "krisv", 11, false);
+        oob = (Double) outputs.get("oob");
+        posterior = (Double) outputs.get("confidence");
+        if (oob!=null) oobError.add(oob);
+        if (posterior!=null) posteriors.add(posterior);
+
+        outputs = startAndReturnTaskOutputData("test item2", "krisv", 10, true);
+        oob = (Double) outputs.get("oob");
+        posterior = (Double) outputs.get("confidence");
+        if (oob!=null) oobError.add(oob);
+        if (posterior!=null) posteriors.add(posterior);
+
+        outputs = startAndReturnTaskOutputData("test item2", "krisv", 10, false);
+        oob = (Double) outputs.get("oob");
+        posterior = (Double) outputs.get("confidence");
+        if (oob!=null) oobError.add(oob);
+        if (posterior!=null) posteriors.add(posterior);
+
+        outputs = startAndReturnTaskOutputData("test item", "john", 5, false);
+        oob = (Double) outputs.get("oob");
+        posterior = (Double) outputs.get("confidence");
+        if (oob!=null) oobError.add(oob);
+        if (posterior!=null) posteriors.add(posterior);
+
+        outputs = startAndReturnTaskOutputData("test item2", "krisv", 10, true);
+        oob = (Double) outputs.get("oob");
+        posterior = (Double) outputs.get("confidence");
+        if (oob!=null) oobError.add(oob);
+        if (posterior!=null) posteriors.add(posterior);
+
+        final List<Integer> x = IntStream.range(0, oobError.size()).boxed().collect(Collectors.toList());
     }
     
     /*
