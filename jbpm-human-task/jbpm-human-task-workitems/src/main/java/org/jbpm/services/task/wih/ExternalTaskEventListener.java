@@ -61,7 +61,7 @@ public class ExternalTaskEventListener implements TaskLifeCycleEventListener {
 //                results.put("Result", taskOutcome);
             }
 
-        	results.put("ActorId", userId);
+//        	results.put("ActorId", userId);
         	
         	predictionService.train(task, task.getTaskData().getTaskInputVariables(), results);
             session.getWorkItemManager().completeWorkItem(workItemId, results);

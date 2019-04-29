@@ -16,23 +16,25 @@
 
 package org.jbpm.prediction.randomforest;
 
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
-import java.text.ParseException;
-import java.util.*;
-
 import org.kie.api.task.model.Task;
 import org.kie.internal.task.api.prediction.PredictionOutcome;
 import org.kie.internal.task.api.prediction.PredictionService;
 import smile.classification.DecisionTree;
 import smile.classification.RandomForest;
-import smile.data.*;
+import smile.data.Attribute;
+import smile.data.AttributeDataset;
+import smile.data.NominalAttribute;
+
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
+import java.text.ParseException;
+import java.util.*;
 
 
 public class RandomForestPredictionService implements PredictionService {
-    
+
     public static final String IDENTIFIER = "RandomForest";
-    
+
     private double confidenceThreshold = 100.0;
     private int NUMBER_OF_TREES = 100;
     private int MIN_COUNT = 5;
@@ -40,10 +42,7 @@ public class RandomForestPredictionService implements PredictionService {
 
     // Random forest
     private RandomForest randomForest;
-    private Attribute user = new NominalAttribute("user");
-    private Attribute level = new NominalAttribute("level");
-    private Attribute approved = new NominalAttribute("approved");
-    private AttributeDataset dataset = new AttributeDataset("test", new Attribute[]{user, level}, approved);
+    private AttributeDataset dataset = null;
 
     private static NumberFormat formatter = new DecimalFormat("#0.00");
 
@@ -53,18 +52,20 @@ public class RandomForestPredictionService implements PredictionService {
 
     /**
      * Converts the normalised Out-Of-Bag error (OOB) into an accuracy measure.
+     *
      * @param error An OOB error between 0 (minimum error) and 1 (maximum error).
      * @return An accuracy measure between 0% (minimum accuracy) and 100% (maximum accuracy)
      */
     private double accuracy(double error) {
-    	if (count < MIN_COUNT) {
-    		return 0D;
-    	}
+        if (count < MIN_COUNT) {
+            return 0D;
+        }
         return (1.0 - error) * 100.0;
     }
 
     /**
      * Return the maximum of the label's posteriors for a given prediction
+     *
      * @param posteriori An array with all the label's posterior
      * @return The maximum posterior (as percentage)
      */
@@ -73,16 +74,17 @@ public class RandomForestPredictionService implements PredictionService {
         for (double v : posteriori) {
             max = Math.max(max, v);
         }
-        return max*100.0;
+        return max * 100.0;
     }
 
     /**
      * Return all labels for the current dataset
+     *
      * @return An array of int with all the labels
      */
-    private int[] getLabels() {
+    private static int[] getLabels(AttributeDataset dataset) {
         int[] ys = new int[dataset.size()];
-        for (int i = 0 ; i < dataset.size() ; i++) {
+        for (int i = 0; i < dataset.size(); i++) {
             ys[i] = (int) dataset.get(i).y;
         }
         return ys;
@@ -90,37 +92,53 @@ public class RandomForestPredictionService implements PredictionService {
 
     /**
      * Return unique labels in this dataset
+     *
      * @return A Set containing the unique labels in this dataset
      */
-    private Set<Integer> getUniqueLabels() {
+    private static Set<Integer> getUniqueLabels(AttributeDataset dataset) {
         final Set<Integer> unique = new HashSet<>();
-        for (int label : getLabels()) {
+        for (int label : getLabels(dataset)) {
             unique.add(label);
         }
         return unique;
     }
 
+    private static double[] buildFeatures(AttributeDataset dataset, Map<String, Object> inputData) throws ParseException {
+        // remove extra information
+        inputData.remove("TaskName");
+        inputData.remove("NodeName");
+        inputData.remove("Skippable");
+
+        double[] features = new double[inputData.keySet().size()];
+
+        int i = 0;
+        for (String key : inputData.keySet()) {
+            features[i] = dataset.attributes()[i].valueOf(String.valueOf(inputData.get(key)));
+            i++;
+        }
+        return features;
+    }
+
+    /**
+     * @param task
+     * @param inputData
+     * @return
+     */
     public PredictionOutcome predict(Task task, Map<String, Object> inputData) {
 
         if (randomForest == null) {
             return new PredictionOutcome();
         } else {
-            final double[] features;
-            final String userValue = (String) inputData.get("ActorId");
-            final int levelValue = (Integer) inputData.get("level");
             try {
-                features = new double[]{
-                        user.valueOf(userValue),
-                        level.valueOf(String.valueOf(levelValue))
-                };
+                double[] features = buildFeatures(dataset, inputData);
                 // calculate accuracy as the maximum posterior for this prediction
                 System.out.println(Arrays.toString(randomForest.importance()));
-                double[] posteriori = new double[getUniqueLabels().size()];
+                double[] posteriori = new double[getUniqueLabels(dataset).size()];
                 final int prediction = randomForest.predict(features, posteriori);
                 double accuracy = maxPosterior(posteriori);
 
                 Map<String, Object> outcomes = new HashMap<>();
-                outcomes.put("approved", Boolean.valueOf(approved.toString(prediction)));
+                outcomes.put(dataset.responseAttribute().getName(), Boolean.valueOf(dataset.responseAttribute().toString(prediction)));
                 outcomes.put("confidence", accuracy);
                 outcomes.put("oob", accuracy(randomForest.error()));
 
@@ -135,25 +153,51 @@ public class RandomForestPredictionService implements PredictionService {
         }
     }
 
+    private static void addToDataset(AttributeDataset dataset, Map<String, Object> inputData, Map<String, Object> outputData) throws ParseException {
+        // remove extra information
+        double[] features = buildFeatures(dataset, inputData);
+        double response = dataset.responseAttribute().valueOf(outputData.entrySet().iterator().next().getValue().toString());
+
+        dataset.add(features, response);
+    }
+
+    private AttributeDataset buildDataset(Map<String, Object> inputData, Map<String, Object> outputData) {
+        // remove extra information
+        inputData.remove("TaskName");
+        inputData.remove("NodeName");
+        inputData.remove("Skippable");
+        System.out.println(inputData);
+        Attribute[] attributes = new Attribute[inputData.keySet().size()];
+        int index = 0;
+        for (String key : inputData.keySet()) {
+            attributes[index] = new NominalAttribute(key);
+            index++;
+        }
+
+        Attribute outcome = new NominalAttribute(outputData.keySet().iterator().next());
+        return new AttributeDataset("dataset", attributes, outcome);
+    }
+
+    /**
+     * @param task
+     * @param inputData  The input variables
+     * @param outputData The task outcome
+     */
     public void train(Task task, Map<String, Object> inputData, Map<String, Object> outputData) {
 
-    	count++;
-        final String userValue = (String) inputData.get("ActorId");
-        final int levelValue = (Integer) inputData.get("level");
-
+        count++;
+        if (dataset==null) {
+            dataset = buildDataset(inputData, outputData);
+        }
         try {
-            dataset.add(new double[]{
-                    user.valueOf(userValue),
-                    level.valueOf(String.valueOf(levelValue))
-            }, approved.valueOf(outputData.get("approved").toString()));
-
+            addToDataset(dataset, inputData, outputData);
         } catch (ParseException e) {
             e.printStackTrace();
         }
-        final Set<Integer> uniqueLabels = getUniqueLabels();
+        final Set<Integer> uniqueLabels = getUniqueLabels(dataset);
         if (uniqueLabels.size() >= 2) { // we have enough classes to perform a prediction
-            randomForest = new RandomForest(new Attribute[]{user, level}, dataset.x(),
-                    getLabels(),
+            randomForest = new RandomForest(dataset.attributes(), dataset.x(),
+                    getLabels(dataset),
                     NUMBER_OF_TREES, 100, 5, 1, 0.5,
                     DecisionTree.SplitRule.ENTROPY);
         }
