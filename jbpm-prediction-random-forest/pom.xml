@@ -106,7 +106,6 @@
       <artifactId>logback-classic</artifactId>
       <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>com.github.haifengl</groupId>
       <artifactId>smile-core</artifactId>

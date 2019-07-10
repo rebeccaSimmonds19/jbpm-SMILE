@@ -30,3 +30,4 @@ bin/
 # files used for external db testing
 jdbc_driver.jar
 db-settings.xml
+*.iml

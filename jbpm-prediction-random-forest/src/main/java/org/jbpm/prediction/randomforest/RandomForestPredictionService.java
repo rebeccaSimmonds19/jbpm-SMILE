@@ -55,6 +55,14 @@ public class RandomForestPredictionService implements PredictionService {
         }
     }
 
+    // Random forest
+    private RandomForest randomForest;
+
+    private Attribute userName = new StringAttribute("user");
+    private Attribute level = new NumericAttribute("level");
+    private Attribute approved = new NominalAttribute("approved");
+    private AttributeDataset dataset = new AttributeDataset("test", new Attribute[]{userName, level}, approved);
+
     public String getIdentifier() {
         return IDENTIFIER;
     }

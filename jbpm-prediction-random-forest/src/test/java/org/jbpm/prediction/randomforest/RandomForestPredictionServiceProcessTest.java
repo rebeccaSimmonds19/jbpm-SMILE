@@ -16,7 +16,13 @@
 
 package org.jbpm.prediction.randomforest;
 
-import antlr.collections.impl.IntRange;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.jbpm.services.api.model.DeploymentUnit;
 import org.jbpm.test.services.AbstractKieServicesTest;
 import org.junit.After;
@@ -25,11 +31,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.kie.api.task.model.TaskSummary;
 import org.kie.internal.query.QueryFilter;
-
-import java.util.*;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static org.junit.Assert.*;
 
@@ -410,10 +411,6 @@ public class RandomForestPredictionServiceProcessTest extends AbstractKieService
 
         final List<Integer> x = IntStream.range(0, oobError.size()).boxed().collect(Collectors.toList());
     }
-    
-    /*
-     * Helper methods
-     */
     
     protected Map<String, Object> startAndReturnTaskOutputData(String item, String userId, Integer level, Boolean approved) {
         Map<String, Object> parameters = new HashMap<>();
