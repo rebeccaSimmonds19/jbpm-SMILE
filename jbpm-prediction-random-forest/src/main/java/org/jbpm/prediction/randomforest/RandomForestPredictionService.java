@@ -19,8 +19,8 @@ package org.jbpm.prediction.randomforest;
 import org.kie.api.task.model.Task;
 import org.kie.internal.task.api.prediction.PredictionOutcome;
 import org.kie.internal.task.api.prediction.PredictionService;
-import smile.data.Attribute;
-import smile.data.NominalAttribute;
+import smile.classification.RandomForest;
+import smile.data.*;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
