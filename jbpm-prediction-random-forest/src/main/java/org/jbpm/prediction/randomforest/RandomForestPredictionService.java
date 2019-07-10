@@ -16,15 +16,13 @@
 
 package org.jbpm.prediction.randomforest;
 
+import org.jbpm.prediction.randomforest.backends.SmileNaiveBayes;
 import org.kie.api.task.model.Task;
 import org.kie.internal.task.api.prediction.PredictionOutcome;
 import org.kie.internal.task.api.prediction.PredictionService;
-import smile.classification.RandomForest;
-import smile.data.*;
 
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 
 public class RandomForestPredictionService implements PredictionService {
@@ -34,34 +32,20 @@ public class RandomForestPredictionService implements PredictionService {
     private double confidenceThreshold = 100.0;
     private PredictionEngine engine = null;
 
-    private static NumberFormat formatter = new DecimalFormat("#0.00");
-
-
     private void buildEngine() {
         if (engine==null) {
 
             // Use SMILE Random Forests as the prediction engine
 
-            Attribute item = new NominalAttribute("item");
-            Attribute actorId = new NominalAttribute("ActorId");
-            Attribute level = new NominalAttribute("level");
-            Attribute approved = new NominalAttribute("approved");
-            List<Attribute> inputs = new ArrayList<>();
-            inputs.add(item);
-            inputs.add(actorId);
-            inputs.add(level);
+            final Map<String, FeatureType> inputFeatures = new HashMap<>();
 
-            engine = new SmileNaiveBayes(inputs, approved);
+            inputFeatures.put("item", FeatureType.NOMINAL);
+            inputFeatures.put("ActorId", FeatureType.NOMINAL);
+            inputFeatures.put("level", FeatureType.NOMINAL);
+
+            engine = new SmileNaiveBayes(inputFeatures, "approved", FeatureType.NOMINAL);
         }
     }
-
-    // Random forest
-    private RandomForest randomForest;
-
-    private Attribute userName = new StringAttribute("user");
-    private Attribute level = new NumericAttribute("level");
-    private Attribute approved = new NominalAttribute("approved");
-    private AttributeDataset dataset = new AttributeDataset("test", new Attribute[]{userName, level}, approved);
 
     public String getIdentifier() {
         return IDENTIFIER;
