@@ -16,26 +16,44 @@
 
 package org.jbpm.prediction.randomforest;
 
-import java.text.ParseException;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.kie.api.task.model.Task;
 import org.kie.internal.task.api.prediction.PredictionOutcome;
 import org.kie.internal.task.api.prediction.PredictionService;
-import smile.classification.RandomForest;
-import smile.data.*;
+import smile.data.Attribute;
+import smile.data.NominalAttribute;
+
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
+import java.util.*;
 
 
 public class RandomForestPredictionService implements PredictionService {
-    
+
     public static final String IDENTIFIER = "RandomForest";
-    
-    private double confidenceThreshold = 90.0;
-    
-    // just for the sake of tests
-    private Map<String, Boolean> predictions = new HashMap<>();
-    private Map<String, Integer> predictionsConfidence = new HashMap<>();
+
+    private double confidenceThreshold = 100.0;
+    private PredictionEngine engine = null;
+
+    private static NumberFormat formatter = new DecimalFormat("#0.00");
+
+
+    private void buildEngine() {
+        if (engine==null) {
+
+            // Use SMILE Random Forests as the prediction engine
+
+            Attribute item = new NominalAttribute("item");
+            Attribute actorId = new NominalAttribute("ActorId");
+            Attribute level = new NominalAttribute("level");
+            Attribute approved = new NominalAttribute("approved");
+            List<Attribute> inputs = new ArrayList<>();
+            inputs.add(item);
+            inputs.add(actorId);
+            inputs.add(level);
+
+            engine = new SmileNaiveBayes(inputs, approved);
+        }
+    }
 
     // Random forest
     private RandomForest randomForest;
@@ -49,67 +67,31 @@ public class RandomForestPredictionService implements PredictionService {
         return IDENTIFIER;
     }
 
+    /**
+     * @param task
+     * @param inputData
+     * @return
+     */
     public PredictionOutcome predict(Task task, Map<String, Object> inputData) {
-        String key = task.getName() + task.getTaskData().getDeploymentId()+ inputData.get("level");
 
-
-        if (randomForest == null) {
-            return new PredictionOutcome();
-        } else {
-            final double[] features;
-            try {
-                features = new double[]{
-                        userName.valueOf((String) inputData.get("ActorId")),
-                        level.valueOf(inputData.get("level").toString())
-                };
-                final int prediction = randomForest.predict(features);
-                System.out.println("Prediction:");
-                System.out.println(approved.toString(prediction));
-                System.out.println("Error:");
-                System.out.println(randomForest.error());
-                Map<String, Object> outcomes = new HashMap<>();
-                outcomes.put("approved", Boolean.valueOf(approved.toString(prediction)));
-                outcomes.put("confidence", randomForest.error());
-                return new PredictionOutcome(randomForest.error(), confidenceThreshold, outcomes);
-            } catch (ParseException e) {
-                e.printStackTrace();
-            }
-            return new PredictionOutcome();
+        if (engine==null) {
+            buildEngine();
         }
+        return engine.predict(inputData);
     }
 
+    /**
+     * @param task
+     * @param inputData  The input variables
+     * @param outputData The task outcome
+     */
     public void train(Task task, Map<String, Object> inputData, Map<String, Object> outputData) {
-        // training
-        System.out.println("I'm inside `train`");
-        // output values
-        System.out.println("Input data:"); // {item=test item, TaskName=Task, NodeName=Task, level=5, Skippable=false, ActorId=john}
-        System.out.println(inputData);
-        System.out.println("Output data:"); // {approved=true, confidence=10.0, ActorId=john}
-        System.out.println(outputData);
-        System.out.println("Task:"); // TaskImpl [id=2, name=Task]
-        System.out.println(task);
 
-        // add to dataset
+       if (engine==null) {
+           buildEngine();
+       }
 
-        try {
-            dataset.add(new double[]{
-                    userName.valueOf((String) inputData.get("ActorId")),
-                    level.valueOf(inputData.get("level").toString())
-            }, approved.valueOf(outputData.get("approved").toString()));
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
-
-        int[] ys = new int[dataset.size()];
-        for (int i = 0 ; i < dataset.size() ; i++) {
-            ys[i] = (int) dataset.get(i).y;
-        }
-        if (dataset.size() <= 2) {
-
-        } else {
-            randomForest = new RandomForest(dataset.x(), ys, 100);
-        }
-
+        engine.train(inputData, outputData);
     }
 
 }
