@@ -88,17 +88,32 @@ public class PMMLBackend extends AbstractPredictionEngine implements PredictionE
         System.out.println(data.get("ActorId") + ", " + data.get("level") + ": " + resultRecord.get(outcomeFeatureName));
 
         Map<String, Object> outcomes = new HashMap<>();
-        Double prediction = (Double) resultRecord.get(outcomeFeatureName);
-        long predictionInt = Math.round(prediction);
         String predictionStr;
-        if (predictionInt == 0) {
-            predictionStr = "false";
+        Object predictionValue = resultRecord.get(outcomeFeatureName);
+        Double confidence;
+        if (predictionValue instanceof Double) {
+            Double prediction = (Double) resultRecord.get(outcomeFeatureName);
+            confidence = Math.max(Math.abs(0.0 - prediction), Math.abs(1.0 - prediction));
+            long predictionInt = Math.round(prediction);
+
+            if (predictionInt == 0) {
+                predictionStr = "false";
+            } else {
+                predictionStr = "true";
+            }
         } else {
-            predictionStr = "true";
+
+            if ((Integer) predictionValue == 0) {
+                confidence = (Double) resultRecord.get("probability_0");
+                predictionStr = "false";
+            } else {
+                confidence = (Double) resultRecord.get("probability_1");
+                predictionStr = "true";
+            }
+
         }
 
         outcomes.put(outputFields.get(0).getFieldName().getValue(), predictionStr);
-        final double confidence = Math.max(Math.abs(0.0 - prediction), Math.abs(1.0 - prediction));
         outcomes.put("confidence", confidence);
 
         System.out.println(data + ", prediction = " + predictionStr + ", confidence = " + confidence);

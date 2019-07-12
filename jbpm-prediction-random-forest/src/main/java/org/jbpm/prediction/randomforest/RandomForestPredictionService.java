@@ -46,7 +46,8 @@ public class RandomForestPredictionService implements PredictionService {
             inputFeatures.put("level", FeatureType.NOMINAL);
 
 //            engine = new SmileNaiveBayes(inputFeatures, "approved", FeatureType.NOMINAL);
-            File pmmlFile = new File(getClass().getClassLoader().getResource("models/random_forest.pmml").getFile());
+//            File pmmlFile = new File(getClass().getClassLoader().getResource("models/random_forest.pmml").getFile());
+            File pmmlFile = new File(getClass().getClassLoader().getResource("models/logistic_regression.pmml").getFile());
             engine = new PMMLBackend(inputFeatures, "approved", FeatureType.NOMINAL, pmmlFile);
         }
     }
