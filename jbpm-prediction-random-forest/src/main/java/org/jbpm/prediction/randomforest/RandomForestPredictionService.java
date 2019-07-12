@@ -16,11 +16,13 @@
 
 package org.jbpm.prediction.randomforest;
 
+import org.jbpm.prediction.randomforest.backends.PMMLBackend;
 import org.jbpm.prediction.randomforest.backends.SmileNaiveBayes;
 import org.kie.api.task.model.Task;
 import org.kie.internal.task.api.prediction.PredictionOutcome;
 import org.kie.internal.task.api.prediction.PredictionService;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -43,7 +45,10 @@ public class RandomForestPredictionService implements PredictionService {
             inputFeatures.put("ActorId", FeatureType.NOMINAL);
             inputFeatures.put("level", FeatureType.NOMINAL);
 
-            engine = new SmileNaiveBayes(inputFeatures, "approved", FeatureType.NOMINAL);
+//            engine = new SmileNaiveBayes(inputFeatures, "approved", FeatureType.NOMINAL);
+//            File pmmlFile = new File(getClass().getClassLoader().getResource("models/random_forest.pmml").getFile());
+            File pmmlFile = new File(getClass().getClassLoader().getResource("models/logistic_regression.pmml").getFile());
+            engine = new PMMLBackend(inputFeatures, "approved", FeatureType.NOMINAL, pmmlFile);
         }
     }
 
