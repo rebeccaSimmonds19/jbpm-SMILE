@@ -2,8 +2,8 @@ package org.jbpm.prediction.randomforest.backends;
 
 import org.dmg.pmml.FieldName;
 import org.jbpm.prediction.randomforest.AbstractPredictionEngine;
-import org.jbpm.prediction.randomforest.FeatureType;
 import org.jbpm.prediction.randomforest.PredictionEngine;
+import org.jbpm.prediction.randomforest.AttributeType;
 import org.jpmml.evaluator.*;
 import org.jpmml.evaluator.visitors.DefaultVisitorBattery;
 import org.kie.internal.task.api.prediction.PredictionOutcome;
@@ -24,7 +24,7 @@ public class PMMLBackend extends AbstractPredictionEngine implements PredictionE
     private final List<? extends TargetField> targetFields;
     private final List<? extends OutputField> outputFields;
 
-    public PMMLBackend(Map<String, FeatureType> inputFeatures, String outputFeatureName, FeatureType outputFeatureType, File pmmlFile) {
+    public PMMLBackend(Map<String, AttributeType> inputFeatures, String outputFeatureName, AttributeType outputFeatureType, File pmmlFile) {
         super(inputFeatures, outputFeatureName, outputFeatureType);
 
         Evaluator _evalutator = null;

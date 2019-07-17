@@ -17,7 +17,6 @@
 package org.jbpm.prediction.randomforest;
 
 import org.jbpm.prediction.randomforest.backends.PMMLBackend;
-import org.jbpm.prediction.randomforest.backends.SmileNaiveBayes;
 import org.kie.api.task.model.Task;
 import org.kie.internal.task.api.prediction.PredictionOutcome;
 import org.kie.internal.task.api.prediction.PredictionService;
@@ -37,18 +36,18 @@ public class RandomForestPredictionService implements PredictionService {
     private void buildEngine() {
         if (engine==null) {
 
-            // Use SMILE Random Forests as the prediction engine
+            final Map<String, AttributeType> inputFeatures = new HashMap<>();
 
-            final Map<String, FeatureType> inputFeatures = new HashMap<>();
+            inputFeatures.put("item", AttributeType.NOMINAL);
+            inputFeatures.put("ActorId", AttributeType.NOMINAL);
+            inputFeatures.put("level", AttributeType.NOMINAL);
 
-            inputFeatures.put("item", FeatureType.NOMINAL);
-            inputFeatures.put("ActorId", FeatureType.NOMINAL);
-            inputFeatures.put("level", FeatureType.NOMINAL);
+//          engine = new SmileRandomForest(inputFeatures, "approved", FeatureType.NOMINAL);
+//          engine = new SmileNaiveBayes(inputFeatures, "approved", FeatureType.NOMINAL);
 
-//            engine = new SmileNaiveBayes(inputFeatures, "approved", FeatureType.NOMINAL);
-//            File pmmlFile = new File(getClass().getClassLoader().getResource("models/random_forest.pmml").getFile());
             File pmmlFile = new File(getClass().getClassLoader().getResource("models/logistic_regression.pmml").getFile());
-            engine = new PMMLBackend(inputFeatures, "approved", FeatureType.NOMINAL, pmmlFile);
+
+            engine = new PMMLBackend(inputFeatures, "approved", AttributeType.NOMINAL, pmmlFile);
         }
     }
 

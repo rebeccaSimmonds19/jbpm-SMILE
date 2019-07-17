@@ -1,4 +1,4 @@
-package org.jbpm.prediction.randomforest.annotations;
+package org.jbpm.prediction.randomforest;
 
 public enum AttributeType {
     STRING,

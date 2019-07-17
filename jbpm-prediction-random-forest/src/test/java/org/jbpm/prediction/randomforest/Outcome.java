@@ -1,6 +1,5 @@
 package org.jbpm.prediction.randomforest;
 
-import org.jbpm.prediction.randomforest.annotations.AttributeType;
 import org.jbpm.prediction.randomforest.annotations.RandomForestFeature;
 
 public class Outcome {

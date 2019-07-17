@@ -1,5 +1,7 @@
 package org.jbpm.prediction.randomforest.annotations;
 
+import org.jbpm.prediction.randomforest.AttributeType;
+
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 

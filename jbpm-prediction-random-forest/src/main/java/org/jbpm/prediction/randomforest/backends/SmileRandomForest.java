@@ -1,8 +1,8 @@
 package org.jbpm.prediction.randomforest.backends;
 
 import org.jbpm.prediction.randomforest.AbstractPredictionEngine;
-import org.jbpm.prediction.randomforest.FeatureType;
 import org.jbpm.prediction.randomforest.PredictionEngine;
+import org.jbpm.prediction.randomforest.AttributeType;
 import org.kie.internal.task.api.prediction.PredictionOutcome;
 import smile.classification.RandomForest;
 import smile.data.Attribute;
@@ -22,20 +22,20 @@ public class SmileRandomForest extends AbstractPredictionEngine implements Predi
     private Set<String> outcomeSet = new HashSet<>();
     private final int numAttributes;
 
-    public SmileRandomForest(Map<String, FeatureType> inputFeatures, String outputFeatureName, FeatureType outputFeatureType) {
+    public SmileRandomForest(Map<String, AttributeType> inputFeatures, String outputFeatureName, AttributeType outputFeatureType) {
         super(inputFeatures, outputFeatureName, outputFeatureType);
         smileAttributes = new HashMap<>();
-        for (Map.Entry<String, FeatureType> inputFeature : inputFeatures.entrySet()) {
+        for (Map.Entry<String, AttributeType> inputFeature : inputFeatures.entrySet()) {
             final String name = inputFeature.getKey();
-            final FeatureType type = inputFeature.getValue();
-            if (type == FeatureType.NOMINAL) {
+            final AttributeType type = inputFeature.getValue();
+            if (type == AttributeType.NOMINAL) {
                 smileAttributes.put(name, new NominalAttribute(name));
                 attributeNames.add(name);
             }
         }
         numAttributes = smileAttributes.size();
 
-        if (outputFeatureType == FeatureType.NOMINAL) {
+        if (outputFeatureType == AttributeType.NOMINAL) {
             outcomeAttribute = new NominalAttribute(outputFeatureName);
         } else {
             // only dealing with nominal features at the moment

@@ -4,11 +4,11 @@ import java.util.Map;
 
 abstract public class AbstractPredictionEngine {
 
-    protected Map<String, FeatureType> inputFeatures;
+    protected Map<String, AttributeType> inputFeatures;
     protected String outcomeFeatureName;
-    protected FeatureType outcomeFeatureType;
+    protected AttributeType outcomeFeatureType;
 
-    public AbstractPredictionEngine(Map<String, FeatureType> inputFeatures, String outputFeatureName, FeatureType outputFeatureType) {
+    public AbstractPredictionEngine(Map<String, AttributeType> inputFeatures, String outputFeatureName, AttributeType outputFeatureType) {
         this.inputFeatures = inputFeatures;
         this.outcomeFeatureName = outputFeatureName;
         this.outcomeFeatureType = outputFeatureType;

@@ -1,8 +1,8 @@
 package org.jbpm.prediction.randomforest.backends;
 
 import org.jbpm.prediction.randomforest.AbstractPredictionEngine;
-import org.jbpm.prediction.randomforest.FeatureType;
 import org.jbpm.prediction.randomforest.PredictionEngine;
+import org.jbpm.prediction.randomforest.AttributeType;
 import org.kie.internal.task.api.prediction.PredictionOutcome;
 import smile.classification.NaiveBayes;
 import smile.data.Attribute;
@@ -22,14 +22,14 @@ public class SmileNaiveBayes extends AbstractPredictionEngine implements Predict
     private Set<String> outcomeSet = new HashSet<>();
     private final int numAttributes;
 
-    public SmileNaiveBayes(Map<String, FeatureType> inputFeatures, String outputFeatureName, FeatureType outputFeatureType) {
+    public SmileNaiveBayes(Map<String, AttributeType> inputFeatures, String outputFeatureName, AttributeType outputFeatureType) {
         super(inputFeatures, outputFeatureName, outputFeatureType);
         smileAttributes = new HashMap<>();
-        for (Map.Entry<String, FeatureType> inputFeature : inputFeatures.entrySet()) {
+        for (Map.Entry<String, AttributeType> inputFeature : inputFeatures.entrySet()) {
             final String name = inputFeature.getKey();
-            final FeatureType type = inputFeature.getValue();
+            final AttributeType type = inputFeature.getValue();
 
-            if (type == FeatureType.NOMINAL) {
+            if (type == AttributeType.NOMINAL) {
                 smileAttributes.put(name, new NominalAttribute(name));
                 attributeNames.add(name);
 
@@ -37,7 +37,7 @@ public class SmileNaiveBayes extends AbstractPredictionEngine implements Predict
         }
         numAttributes = smileAttributes.size();
 
-        if (outputFeatureType == FeatureType.NOMINAL) {
+        if (outputFeatureType == AttributeType.NOMINAL) {
             outcomeAttribute = new NominalAttribute(outcomeFeatureName);
         } else {
             // only dealing with nominal features at the moment
