@@ -16,7 +16,9 @@
 
 package org.jbpm.prediction.randomforest;
 
-import org.jbpm.prediction.randomforest.backends.PMMLBackend;
+import org.jbpm.prediction.randomforest.backends.AbstractPMMLBackend;
+import org.jbpm.prediction.randomforest.backends.PMMLLogisticRegressionBackend;
+import org.jbpm.prediction.randomforest.backends.PMMLRandomForestBackend;
 import org.kie.api.task.model.Task;
 import org.kie.internal.task.api.prediction.PredictionOutcome;
 import org.kie.internal.task.api.prediction.PredictionService;
@@ -45,9 +47,11 @@ public class RandomForestPredictionService implements PredictionService {
 //          engine = new SmileRandomForest(inputFeatures, "approved", FeatureType.NOMINAL);
 //          engine = new SmileNaiveBayes(inputFeatures, "approved", FeatureType.NOMINAL);
 
-            File pmmlFile = new File(getClass().getClassLoader().getResource("models/logistic_regression.pmml").getFile());
+//            File pmmlFile = new File(getClass().getClassLoader().getResource("models/logistic_regression.pmml").getFile());
+            File pmmlFile = new File(getClass().getClassLoader().getResource("models/random_forest.pmml").getFile());
 
-            engine = new PMMLBackend(inputFeatures, "approved", AttributeType.NOMINAL, pmmlFile);
+            engine = new PMMLLogisticRegressionBackend(inputFeatures, "approved", AttributeType.NOMINAL, pmmlFile);
+            engine = new PMMLRandomForestBackend(inputFeatures, "approved", AttributeType.NOMINAL, pmmlFile);
         }
     }
 
